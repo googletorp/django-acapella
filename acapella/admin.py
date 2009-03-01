@@ -1,9 +1,9 @@
 from django.contrib import admin
-from acapella.models import PermissionSlip
+from acapella.models import PermissionModel
 
-class PermissionSlipAdmin(admin.ModelAdmin):
-    list_display = ('slip', 'user', 'permission')
-    ordering = ('-slip',)
+class PermissionModelAdmin(admin.ModelAdmin):
+    list_display = ('model', 'user', 'permission')
+    ordering = ('-model',)
 
 
-admin.site.register(PermissionSlip, PermissionSlipAdmin)
+admin.site.register(PermissionModel, PermissionModelAdmin)
