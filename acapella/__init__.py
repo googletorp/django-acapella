@@ -48,7 +48,7 @@ class Model(MetaObject):
         else:
             return perm[0].PERMISSION_CHOICES[perm[0].permission][1]
 
-    def check_permission(self, user_input, permissions=[0, 1, 2, 3, 4, 5, 6, 7]):
+    def check_permission(self, user_input, permission):
         if type(user_input) == int:
             user = User.objects.get(pk=user_input)
         elif type(user_input) == User:
@@ -58,15 +58,28 @@ class Model(MetaObject):
         if user.is_superuser:
             return True
         # Check to see if the permission is a list, only integers are accepted.
-        if type(permissions) != list:
-            raise TypeError("The permissions input for %s must be entered in a list." % self.check_permission)
+        if type(permission) not in [str, unicode]:
+            raise TypeError("The permissions input for %s must be entered in a string." % self.check_permission)
+        if permission not in ['read', 'Read',
+                                'write', 'Write',
+                                'delete', 'Delete',
+                                u'read', u'Read',
+                                u'write', u'Write',
+                                u'delete', u'Delete']:
+            return ValueError("The permission inout for %s must be read, write or delete" % self.check_permission)
+        if permission in ['read', 'Read', u'read', u'Read']:
+            perm_list = [1,3,5,7]
+        elif permission in ['write', 'Write', u'write', u'Write']:
+            perm_list = [2,3,6,7]
+        else:
+            perm_list = [4,5,6,7]
         perm = PermissionModel.objects.filter(model=self, user=user)
         # if no permissions has been entered for the user on this object,
         # returning True as acapella wont hinder access unless explicit ordered.
         if not perm:
             return True
         # check to see if the permission is in the list of provided permissions.
-        if perm[0].permission in permissions:
+        if perm[0].permission in perm_list:
             return True
         return False
 
