@@ -6,6 +6,7 @@ import new
 import inspect
 
 # MetaClass and MetaObject is taken form the django-granular-permissions app.
+# This enables us to inject new permission methods to any given model.
 class MetaClass(type):
     def __new__(self, classname, classbases, classdict):
         try:
@@ -83,3 +84,94 @@ class Model(MetaObject):
             return True
         return False
 
+    def add_permission(self, user_input, permission):
+        if type(user_input) == int:
+            user = User.objects.get(pk=user_input)
+        elif type(user_input) == User:
+            user = user_input
+        else:
+            raise TypeError("The user input for %s must be either an integer or userobject." % self.has_permission)
+        if type(permission) not in [str, unicode]:
+            raise TypeError("The permissions input for %s must be entered in a string." % self.check_permission)
+        if permission not in ['read', 'Read',
+                                'write', 'Write',
+                                'delete', 'Delete',
+                                u'read', u'Read',
+                                u'write', u'Write',
+                                u'delete', u'Delete']:
+            return ValueError("The permission inout for %s must be read, write or delete" % self.check_permission)
+        if permission in ['read', 'Read', u'read', u'Read']:
+            perm_list = [1,3,5,7]
+            perm_int = 1
+        elif permission in ['write', 'Write', u'write', u'Write']:
+            perm_list = [2,3,6,7]
+            perm_int = 2
+        else:
+            perm_list = [4,5,6,7]
+            perm_int = 4
+        perm = PermissionModel.objects.filter(model=self, user=user)
+        if not perm:
+            new_perm = PermissionModel(model=self, user=user, permission=perm_int)
+            new_perm.save()
+            return 'New permission %(permission)s for user %(user)s on object %(model)s has been created' % {'permission': permission,
+                                                                                                            'user': user,
+                                                                                                            'model': self}
+        else:
+            perm = perm[0]
+            if not perm.permission in perm_list:
+                # To add a permission we just need to add the permission integer
+                # to the integer permission value.
+                perm.permission += perm_int
+                perm.save()
+                return 'Permission %(permission)s for user %(user)s on object %(model)s has been added' % {'permission': permission,
+                                                                                                                'user': user,
+                                                                                                                'model': self}
+        return 'Permission %(permission)s for user %(user)s on object %(model)s already existed' % {'permission': permission,
+                                                                                                    'user': user,
+                                                                                                    'model': self}
+    def del_permission(self, user_input, permission):
+        if type(user_input) == int:
+            user = User.objects.get(pk=user_input)
+        elif type(user_input) == User:
+            user = user_input
+        else:
+            raise TypeError("The user input for %s must be either an integer or userobject." % self.has_permission)
+        if type(permission) not in [str, unicode]:
+            raise TypeError("The permissions input for %s must be entered in a string." % self.check_permission)
+        if permission not in ['read', 'Read',
+                                'write', 'Write',
+                                'delete', 'Delete',
+                                u'read', u'Read',
+                                u'write', u'Write',
+                                u'delete', u'Delete']:
+            return ValueError("The permission inout for %s must be read, write or delete" % self.check_permission)
+        if permission in ['read', 'Read', u'read', u'Read']:
+            perm_list = [1,3,5,7]
+            perm_int = 1
+        elif permission in ['write', 'Write', u'write', u'Write']:
+            perm_list = [2,3,6,7]
+            perm_int = 2
+        else:
+            perm_list = [4,5,6,7]
+            perm_int = 4
+        perm = PermissionModel.objects.filter(model=self, user=user)
+        if not perm:
+            # if no permission has been created for the user on the object, we
+            # create a new permission with no access perm_int = 0
+            new_perm = PermissionModel(model=self, user=user, permission=0)
+            new_perm.save()
+            return 'New permission for user %(user)s on object %(model)s with no access has been created' % {'user': user,
+                                                                                                            'model': self}
+        else:
+            perm = perm[0]
+            if perm.permission in perm_list:
+                # To delete a perm, we can just substract the permission
+                # integer.
+                perm.permission -= perm_int
+                perm.save()
+                return 'Permission %(permission)s for user %(user)s on object %(model)s has been deleted' % {'permission': permission,
+                                                                                                            'user': user,
+                                                                                                            'model': self}
+        return 'User %(user)s on object %(model)s did not have the permission %(permission)s' % {'permission': permission,
+                                                                                                    'user': user,
+                                                                                                    'model': self}
